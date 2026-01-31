@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { attendanceApi } from "@/lib/api";
 import type { AttendanceCreate } from "@/types";
 
+export type AttendanceUpdate = Partial<AttendanceCreate>;
+
 const ATTENDANCE_QUERY_KEY = ["attendance"] as const;
 
 export function useAttendance() {
@@ -26,6 +28,17 @@ export function useCreateAttendance() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: AttendanceCreate) => attendanceApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ATTENDANCE_QUERY_KEY });
+    },
+  });
+}
+
+export function useUpdateAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: AttendanceUpdate }) =>
+      attendanceApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ATTENDANCE_QUERY_KEY });
     },

@@ -12,6 +12,17 @@ def create_attendance(
     attendance: AttendanceCreate,
     session: Session = Depends(get_session),
 ) -> Attendance:
+    statement = select(Attendance).where(
+        Attendance.emp_id == attendance.emp_id,
+        Attendance.date == attendance.date,
+    )
+    existing = session.exec(statement).first()
+    if existing:
+        existing.status = attendance.status
+        session.add(existing)
+        session.commit()
+        session.refresh(existing)
+        return existing
     db_attendance = Attendance.model_validate(attendance)
     session.add(db_attendance)
     session.commit()

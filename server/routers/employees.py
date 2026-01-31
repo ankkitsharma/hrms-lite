@@ -12,6 +12,17 @@ def create_employee(
     employee: EmployeeCreate,
     session: Session = Depends(get_session),
 ) -> Employee:
+    statement = select(Employee).where(
+        Employee.name == employee.name,
+        Employee.email == employee.email,
+        Employee.dept == employee.dept,
+    )
+    existing = session.exec(statement).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with the same name, email and department already exists.",
+        )
     db_employee = Employee.model_validate(employee)
     session.add(db_employee)
     session.commit()

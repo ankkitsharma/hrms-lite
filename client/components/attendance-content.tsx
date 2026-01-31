@@ -38,14 +38,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAttendance, useCreateAttendance } from "@/hooks/use-attendance";
+import {
+  useAttendance,
+  useCreateAttendance,
+  useUpdateAttendance,
+} from "@/hooks/use-attendance";
 import { useEmployees } from "@/hooks/use-employees";
-import type { AttendanceStatus } from "@/types";
+import type { Attendance, AttendanceStatus } from "@/types";
 import { useMemo, useState } from "react";
 
 const STATUS_OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: "PRESENT", label: "Present" },
   { value: "ABSENT", label: "Absent" },
+  { value: "NULL", label: "Not set" },
 ];
 
 export function AttendanceContent() {
@@ -62,7 +67,17 @@ export function AttendanceContent() {
     refetch: refetchAttendance,
   } = useAttendance();
   const createMutation = useCreateAttendance();
+  const updateMutation = useUpdateAttendance();
   const [open, setOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<Attendance | null>(null);
+  const [editForm, setEditForm] = useState<{
+    status: AttendanceStatus;
+    date: string;
+  }>({
+    status: "PRESENT",
+    date: "",
+  });
+  const [editFormError, setEditFormError] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState("");
   const [form, setForm] = useState({
     emp_id: 0,
@@ -112,6 +127,29 @@ export function AttendanceContent() {
     } catch (err) {
       setFormError(
         err instanceof Error ? err.message : "Failed to mark attendance",
+      );
+    }
+  };
+
+  const handleEditOpen = (record: Attendance) => {
+    setEditRecord(record);
+    setEditForm({ status: record.status, date: record.date });
+    setEditFormError(null);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editRecord) return;
+    setEditFormError(null);
+    try {
+      await updateMutation.mutateAsync({
+        id: editRecord.id,
+        data: { status: editForm.status, date: editForm.date },
+      });
+      setEditRecord(null);
+    } catch (err) {
+      setEditFormError(
+        err instanceof Error ? err.message : "Failed to update attendance",
       );
     }
   };
@@ -306,6 +344,7 @@ export function AttendanceContent() {
                   <TableHead>Employee</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -334,6 +373,15 @@ export function AttendanceContent() {
                           {a.status}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditOpen(a)}
+                        >
+                          Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -342,6 +390,73 @@ export function AttendanceContent() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={editRecord !== null}
+        onOpenChange={(open) => !open && setEditRecord(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleEditSubmit}>
+            <DialogHeader>
+              <DialogTitle>Edit attendance</DialogTitle>
+              <DialogDescription>
+                Update status or date for this record
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-att-date">Date</Label>
+                <Input
+                  id="edit-att-date"
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, date: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <Select
+                  value={editForm.status}
+                  onValueChange={(v) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      status: v as AttendanceStatus,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {editFormError && (
+                <p className="text-sm text-destructive">{editFormError}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditRecord(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving…" : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {employees && employees.length > 0 && (
         <Card>

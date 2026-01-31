@@ -46,8 +46,9 @@ import {
   useCreateEmployee,
   useDeleteEmployee,
   useEmployees,
+  useUpdateEmployee,
 } from "@/hooks/use-employees";
-import type { EmployeeCreate } from "@/types";
+import type { Employee, EmployeeCreate } from "@/types";
 import { useState } from "react";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,8 +56,10 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function EmployeesContent() {
   const { data: employees, isLoading, error, refetch } = useEmployees();
   const createMutation = useCreateEmployee();
+  const updateMutation = useUpdateEmployee();
   const deleteMutation = useDeleteEmployee();
   const [open, setOpen] = useState(false);
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeCreate>({
     name: "",
     email: "",
@@ -90,6 +93,45 @@ export function EmployeesContent() {
     } catch (err) {
       setFormError(
         err instanceof Error ? err.message : "Failed to add employee",
+      );
+    }
+  };
+
+  const handleEditOpen = (emp: Employee) => {
+    setEditEmployee(emp);
+    setForm({ name: emp.name, email: emp.email, dept: emp.dept });
+    setFormError(null);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editEmployee) return;
+    setFormError(null);
+    if (!form.name.trim()) {
+      setFormError("Full name is required");
+      return;
+    }
+    if (!form.email.trim()) {
+      setFormError("Email is required");
+      return;
+    }
+    if (!emailRegex.test(form.email)) {
+      setFormError("Please enter a valid email address");
+      return;
+    }
+    if (!form.dept.trim()) {
+      setFormError("Department is required");
+      return;
+    }
+    try {
+      await updateMutation.mutateAsync({
+        id: editEmployee.id,
+        data: form,
+      });
+      setEditEmployee(null);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Failed to update employee",
       );
     }
   };
@@ -194,6 +236,70 @@ export function EmployeesContent() {
             </form>
           </DialogContent>
         </Dialog>
+        <Dialog
+          open={editEmployee !== null}
+          onOpenChange={(open) => !open && setEditEmployee(null)}
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <form onSubmit={handleEditSubmit}>
+              <DialogHeader>
+                <DialogTitle>Edit employee</DialogTitle>
+                <DialogDescription>Update employee details</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-name">Full name</Label>
+                  <Input
+                    id="edit-name"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, email: e.target.value }))
+                    }
+                    placeholder="john@company.com"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-dept">Department</Label>
+                  <Input
+                    id="edit-dept"
+                    value={form.dept}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, dept: e.target.value }))
+                    }
+                    placeholder="Engineering"
+                  />
+                </div>
+                {formError && (
+                  <p className="text-sm text-destructive">{formError}</p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditEmployee(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         {employees && employees.length === 0 ? (
@@ -211,7 +317,7 @@ export function EmployeesContent() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Department</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[180px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -225,7 +331,14 @@ export function EmployeesContent() {
                   <TableCell>
                     <Badge variant="secondary">{emp.dept}</Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditOpen(emp)}
+                    >
+                      Edit
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
