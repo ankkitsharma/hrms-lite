@@ -128,3 +128,16 @@ cd client
 - **CORS** – The server allows the origin set in `CLIENT_BASE_URL` (default `http://localhost:3000`). For other origins (e.g. production frontend), update server config.
 - **Date/time** – Attendance dates are stored and filtered as provided; timezone handling is minimal and may need to be refined for multi-timezone use.
 - **UI** – Optimized for modern desktop browsers; mobile layout may need additional work for production use.
+
+## Website Screenshot and Recordings
+- Recording:
+https://drive.google.com/file/d/1cSz9vomcRwrEh9hhj-G7o2-kI-SWBOSM/view?usp=drive_link
+- Screenshot:
+<img width="1470" height="881" alt="Screenshot 2026-01-31 at 4 24 12 PM" src="https://github.com/user-attachments/assets/c3f89a0f-6ab2-42c6-bb0e-c44e76d3057c" />
+<img width="1470" height="881" alt="Screenshot 2026-01-31 at 4 28 57 PM" src="https://github.com/user-attachments/assets/09e628f7-13a7-49e7-bd76-2625d6c07381" />
+<img width="1470" height="881" alt="Screenshot 2026-01-31 at 4 29 06 PM" src="https://github.com/user-attachments/assets/c1a08428-1fac-47ab-95bb-794e05df6027" />
+<img width="1470" height="881" alt="Screenshot 2026-01-31 at 4 29 12 PM" src="https://github.com/user-attachments/assets/adea0216-315c-4cef-9f51-cbc6650be0dc" />
+
+
+
+
