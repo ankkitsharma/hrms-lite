@@ -11,7 +11,7 @@ Ethera AI Assignement
 - Database: PostgreSQL
 - Deployment:
   - Frontend: Vercel
-  - Backend: Railway
+  - Backend: Railway (Hosted on https://hrms-lite-ankit28.up.railway.app/)
 
 ## Main Feature Requirement:
 
