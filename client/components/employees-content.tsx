@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -191,7 +192,11 @@ export function EmployeesContent() {
 
   const handleDelete = async (id: number) => {
     try {
+      const wasOnlyItemOnPage = (employees?.length ?? 0) === 1;
       await deleteMutation.mutateAsync(id);
+      if (wasOnlyItemOnPage && offset > 0) {
+        setOffset((prev) => Math.max(0, prev - limit));
+      }
     } catch {
       // Error handled by mutation state / toast could be added
     }
@@ -468,14 +473,27 @@ export function EmployeesContent() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Loading…
-                </TableCell>
-              </TableRow>
+              <>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-5 w-32 rounded-md" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-44 rounded-md" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-24 rounded-md" />
+                    </TableCell>
+                    <TableCell className="w-[180px]">
+                      <div className="flex gap-2">
+                        <Skeleton className="h-8 w-14 rounded-md" />
+                        <Skeleton className="h-8 w-16 rounded-md" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : isEmpty ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-8 text-center">

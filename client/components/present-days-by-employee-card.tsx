@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -61,14 +62,23 @@ export function PresentDaysByEmployeeCard() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={3}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Loading…
-                </TableCell>
-              </TableRow>
+              <>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-5 w-28 rounded-md" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-24 rounded-md" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end">
+                        <Skeleton className="h-5 w-12 rounded-md" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : error ? (
               <TableRow>
                 <TableCell colSpan={3} className="py-8 text-center">
