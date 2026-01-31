@@ -1,8 +1,18 @@
+from datetime import date as date_type
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from database import get_session
-from models import Attendance, AttendanceCreate, AttendanceRead, AttendanceUpdate
+from models import (
+    Attendance,
+    AttendanceCreate,
+    AttendanceRead,
+    AttendanceListResponse,
+    AttendanceUpdate,
+    Employee,
+)
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -30,10 +40,44 @@ def create_attendance(
     return db_attendance
 
 
-@router.get("/", response_model=list[AttendanceRead])
-def list_attendance(session: Session = Depends(get_session)) -> list[Attendance]:
+def _attendance_base_statement(
+    date: date_type | None,
+    emp_id: int | None,
+    status: str | None,
+    dept: str | None,
+    name: str | None = None,
+):
     statement = select(Attendance)
-    return list(session.exec(statement).all())
+    if date is not None:
+        statement = statement.where(Attendance.date == date)
+    if emp_id is not None:
+        statement = statement.where(Attendance.emp_id == emp_id)
+    if status:
+        statement = statement.where(Attendance.status == status)
+    if dept or name:
+        statement = statement.join(Employee, Attendance.emp_id == Employee.id)
+        if dept:
+            statement = statement.where(Employee.dept.ilike(f"%{dept}%"))
+        if name:
+            statement = statement.where(Employee.name.ilike(f"%{name}%"))
+    return statement
+
+
+@router.get("/", response_model=AttendanceListResponse)
+def list_attendance(
+    session: Session = Depends(get_session),
+    limit: int = 10,
+    offset: int = 0,
+    date: date_type | None = None,
+    emp_id: int | None = None,
+    status: str | None = None,
+    dept: str | None = None,
+    name: str | None = None,
+) -> AttendanceListResponse:
+    base = _attendance_base_statement(date, emp_id, status, dept, name)
+    total = session.exec(select(func.count()).select_from(base.subquery())).one()
+    items = list(session.exec(base.offset(offset).limit(limit)).all())
+    return AttendanceListResponse(items=items, total=total)
 
 
 @router.get("/{attendance_id}", response_model=AttendanceRead)

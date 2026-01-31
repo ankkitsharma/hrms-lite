@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config.settings import settings
 from database import create_db_and_tables
-from routers import attendance, employees
+from routers import attendance, dashboard, employees, present_days
 
 
 @asynccontextmanager
@@ -26,6 +26,8 @@ app.add_middleware(
 
 app.include_router(employees.router)
 app.include_router(attendance.router)
+app.include_router(dashboard.router)
+app.include_router(present_days.router)
 
 
 @app.get("/")

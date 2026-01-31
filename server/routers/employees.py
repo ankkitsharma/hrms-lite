@@ -1,8 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from database import get_session
-from models import Employee, EmployeeCreate, EmployeeRead, EmployeeUpdate
+from models import (
+    Employee,
+    EmployeeCreate,
+    EmployeeRead,
+    EmployeeListResponse,
+    EmployeeUpdate,
+)
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -30,10 +37,30 @@ def create_employee(
     return db_employee
 
 
-@router.get("/", response_model=list[EmployeeRead])
-def list_employees(session: Session = Depends(get_session)) -> list[Employee]:
+def _employees_base_statement(name: str | None, email: str | None, dept: str | None):
     statement = select(Employee)
-    return list(session.exec(statement).all())
+    if name:
+        statement = statement.where(Employee.name.ilike(f"%{name}%"))
+    if email:
+        statement = statement.where(Employee.email.ilike(f"%{email}%"))
+    if dept:
+        statement = statement.where(Employee.dept.ilike(f"%{dept}%"))
+    return statement
+
+
+@router.get("/", response_model=EmployeeListResponse)
+def list_employees(
+    session: Session = Depends(get_session),
+    limit: int = 10,
+    offset: int = 0,
+    name: str | None = None,
+    email: str | None = None,
+    dept: str | None = None,
+) -> EmployeeListResponse:
+    base = _employees_base_statement(name, email, dept)
+    total = session.exec(select(func.count()).select_from(base.subquery())).one()
+    items = list(session.exec(base.offset(offset).limit(limit)).all())
+    return EmployeeListResponse(items=items, total=total)
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)

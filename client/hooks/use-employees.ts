@@ -3,15 +3,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { employeesApi } from "@/lib/api";
 import type { EmployeeCreate } from "@/types";
+import type { EmployeeListParams } from "@/lib/api";
 
 export type EmployeeUpdate = Partial<EmployeeCreate>;
 
 const EMPLOYEES_QUERY_KEY = ["employees"] as const;
 
-export function useEmployees() {
+const DEFAULT_LIST_PARAMS: EmployeeListParams = { limit: 10, offset: 0 };
+
+export function useEmployees(params?: EmployeeListParams) {
+  const listParams = params ?? DEFAULT_LIST_PARAMS;
   return useQuery({
-    queryKey: EMPLOYEES_QUERY_KEY,
-    queryFn: employeesApi.list,
+    queryKey: [...EMPLOYEES_QUERY_KEY, listParams],
+    queryFn: () => employeesApi.list(listParams),
   });
 }
 
@@ -29,6 +33,8 @@ export function useCreateEmployee() {
     mutationFn: (data: EmployeeCreate) => employeesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: EMPLOYEES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["present-days"] });
     },
   });
 }
@@ -41,6 +47,8 @@ export function useUpdateEmployee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: EMPLOYEES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["present-days"] });
     },
   });
 }
@@ -52,6 +60,8 @@ export function useDeleteEmployee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: EMPLOYEES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["present-days"] });
     },
   });
 }

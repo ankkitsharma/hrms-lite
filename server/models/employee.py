@@ -27,3 +27,8 @@ class EmployeeUpdate(SQLModel):
     name: str | None = None
     email: str | None = None
     dept: str | None = None
+
+
+class EmployeeListResponse(SQLModel):
+    items: list[EmployeeRead]
+    total: int

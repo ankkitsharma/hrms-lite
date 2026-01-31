@@ -9,105 +9,74 @@ import {
 } from "@/components/ui/card";
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useAttendance } from "@/hooks/use-attendance";
-import { useEmployees } from "@/hooks/use-employees";
-import { useMemo } from "react";
+import { dashboardApi } from "@/lib/api";
+import { PresentDaysByEmployeeCard } from "@/components/present-days-by-employee-card";
+import { useQuery } from "@tanstack/react-query";
 
 export function DashboardContent() {
   const {
-    data: employees,
-    isLoading: employeesLoading,
-    error: employeesError,
-    refetch: refetchEmployees,
-  } = useEmployees();
-  const {
-    data: attendance,
-    isLoading: attendanceLoading,
-    error: attendanceError,
-    refetch: refetchAttendance,
-  } = useAttendance();
+    data: stats,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["dashboard", "stats"],
+    queryFn: () => dashboardApi.stats(),
+  });
 
-  const summary = useMemo(() => {
-    if (!employees || !attendance) return null;
-    const presentCount = attendance.filter(
-      (a) => a.status === "PRESENT",
-    ).length;
-    const absentCount = attendance.filter((a) => a.status === "ABSENT").length;
-    const presentByEmployee = attendance.reduce<Record<number, number>>(
-      (acc, a) => {
-        if (a.status === "PRESENT") acc[a.emp_id] = (acc[a.emp_id] ?? 0) + 1;
-        return acc;
-      },
-      {},
-    );
-    const topByPresent = employees
-      .map((e) => ({ ...e, present: presentByEmployee[e.id] ?? 0 }))
-      .sort((a, b) => b.present - a.present)
-      .slice(0, 5);
-    return { presentCount, absentCount, topByPresent };
-  }, [employees, attendance]);
-
-  if (employeesLoading || attendanceLoading) {
+  if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LoadingState rows={1} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LoadingState rows={1} />
-          </CardContent>
-        </Card>
+      <div className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <CardTitle>—</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <LoadingState rows={1} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <PresentDaysByEmployeeCard />
       </div>
     );
   }
 
-  if (employeesError || attendanceError) {
+  if (error) {
     return (
       <ErrorState
-        message={
-          employeesError?.message ??
-          attendanceError?.message ??
-          "Failed to load"
-        }
-        onRetry={() => {
-          refetchEmployees();
-          refetchAttendance();
-        }}
+        message={error instanceof Error ? error.message : "Failed to load"}
+        onRetry={() => refetch()}
       />
     );
   }
 
-  const employeeCount = employees?.length ?? 0;
-  const presentCount = summary?.presentCount ?? 0;
-  const absentCount = summary?.absentCount ?? 0;
+  const {
+    total_employees,
+    present_days,
+    absent_days,
+    total_present_today,
+    total_absent_today,
+  } = stats ?? {
+    total_employees: 0,
+    present_days: 0,
+    absent_days: 0,
+    total_present_today: 0,
+    total_absent_today: 0,
+  };
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card>
           <CardHeader>
             <CardTitle>Total Employees</CardTitle>
             <CardDescription>Registered in the system</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{employeeCount}</p>
+            <p className="text-3xl font-semibold">{total_employees}</p>
           </CardContent>
         </Card>
         <Card>
@@ -117,7 +86,7 @@ export function DashboardContent() {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-semibold text-green-600 dark:text-green-500">
-              {presentCount}
+              {present_days}
             </p>
           </CardContent>
         </Card>
@@ -128,48 +97,35 @@ export function DashboardContent() {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-semibold text-amber-600 dark:text-amber-500">
-              {absentCount}
+              {absent_days}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Present Today</CardTitle>
+            <CardDescription>Present marks for today</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold text-green-600 dark:text-green-500">
+              {total_present_today}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Absent Today</CardTitle>
+            <CardDescription>Absent marks for today</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold text-amber-600 dark:text-amber-500">
+              {total_absent_today}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {summary && summary.topByPresent.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Present days by employee</CardTitle>
-            <CardDescription>Top 5 by present count</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead className="text-right">Present days</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {summary.topByPresent.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="font-medium">{e.name}</TableCell>
-                    <TableCell>{e.dept}</TableCell>
-                    <TableCell className="text-right">{e.present}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {employees && employees.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            No employees yet. Add employees from the Employees page.
-          </CardContent>
-        </Card>
-      )}
+      <PresentDaysByEmployeeCard />
     </div>
   );
 }

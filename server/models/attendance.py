@@ -36,3 +36,8 @@ class AttendanceUpdate(SQLModel):
     emp_id: int | None = None
     status: AttendanceStatus | None = None
     date: DateType | None = None
+
+
+class AttendanceListResponse(SQLModel):
+    items: list[AttendanceRead]
+    total: int
