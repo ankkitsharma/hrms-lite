@@ -65,25 +65,21 @@ export function DashboardContent() {
           value={present_days}
           title="Present Days"
           description="Total present marks"
-          variant="green"
         />
         <StatCard
           value={absent_days}
           title="Absent Days"
           description="Total absent marks"
-          variant="amber"
         />
         <StatCard
           value={total_present_today}
           title="Total Present Today"
           description="Present marks for today"
-          variant="green"
         />
         <StatCard
           value={total_absent_today}
           title="Total Absent Today"
           description="Absent marks for today"
-          variant="amber"
         />
       </div>
 
