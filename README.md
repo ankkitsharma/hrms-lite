@@ -8,10 +8,10 @@ Ethera AI Assignement
   - Package Manager: Bun
 - Backend: Python (FastAPI)
   - Package Manager: UV (Also for virtual env as well)
-- Database: PostgreSQL
+- Database: PostgreSQL (NeonPostgres)
 - Deployment:
-  - Frontend: Vercel
-  - Backend: Railway (Hosted on https://hrms-lite-ankit28.up.railway.app/)
+  - Frontend: Vercel (Prod Hosted on https://hrms-lite-client.vercel.app)
+  - Backend: Railway (Prod Hosted on https://hrms-lite-ankit28.up.railway.app)
 
 ## Main Feature Requirement:
 
